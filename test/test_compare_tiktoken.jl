@@ -23,7 +23,7 @@ using Test
 
         for (text, expected_tokens) in test_cases
             tokens = encode(enc, text)
-            @test tokens == expected_tokens "Text '$text' expected $expected_tokens but got $tokens"
+            @test tokens == expected_tokens
         end
     end
 

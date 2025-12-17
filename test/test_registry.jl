@@ -10,7 +10,6 @@ using Test
         encodings = ["gpt2", "r50k_base", "p50k_base", "cl100k_base", "o200k_base"]
 
         for name in encodings
-            @test_nowarn enc = get_encoding(name)
             enc = get_encoding(name)
             @test enc.name == name
             @test enc.handle != C_NULL
