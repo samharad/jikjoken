@@ -3,6 +3,7 @@ Encoding registry - loading encodings from tiktoken data files
 """
 
 using JSON3
+using Base64
 
 # Mapping of encoding names to tiktoken files
 const ENCODING_FILES = Dict(
@@ -161,12 +162,18 @@ function create_encoding_ffi(tiktoken_bytes::Vector{UInt8}, special_tokens::Dict
 
     # Call Rust FFI to create encoding
     # Convert data to C-compatible format
-    encoder_keys = [pointer(k) for k in keys(mergeable_ranks)]
-    encoder_key_lens = [length(k) for k in keys(mergeable_ranks)]
-    encoder_values = collect(UInt32, values(mergeable_ranks))
+    # Need to preserve ordering between keys and values
+    encoder_items = collect(pairs(mergeable_ranks))
+    encoder_keys_data = [first(item) for item in encoder_items]
+    encoder_values_data = UInt32[last(item) for item in encoder_items]
 
-    special_keys = [pointer(Vector{UInt8}(k)) for k in keys(special_tokens)]
-    special_values = collect(UInt32, values(special_tokens))
+    encoder_keys = [pointer(k) for k in encoder_keys_data]
+    encoder_key_lens = UInt64[length(k) for k in encoder_keys_data]
+
+    # Convert special tokens to C strings (need to keep them alive)
+    special_items = collect(pairs(special_tokens))
+    special_keys_cstrings = [Base.unsafe_convert(Cstring, Base.cconvert(Cstring, first(item))) for item in special_items]
+    special_values_data = UInt32[last(item) for item in special_items]
 
     out_handle_ref = Ref{Ptr{Cvoid}}(C_NULL)
 
@@ -176,8 +183,8 @@ function create_encoding_ffi(tiktoken_bytes::Vector{UInt8}, special_tokens::Dict
         (Ptr{Ptr{UInt8}}, Ptr{UInt64}, Ptr{UInt32}, UInt64,
          Ptr{Cstring}, Ptr{UInt32}, UInt64,
          Cstring, Ptr{Ptr{Cvoid}}),
-        encoder_keys, encoder_key_lens, encoder_values, length(encoder_keys),
-        special_keys, special_values, length(special_keys),
+        encoder_keys, encoder_key_lens, encoder_values_data, length(encoder_keys),
+        special_keys_cstrings, special_values_data, length(special_keys_cstrings),
         pattern, out_handle_ref
     )
 
@@ -188,8 +195,4 @@ function create_encoding_ffi(tiktoken_bytes::Vector{UInt8}, special_tokens::Dict
     return out_handle_ref[]
 end
 
-# Helper function for base64 decoding
-function base64decode(s::AbstractString)
-    # Use Julia's base64 decoder
-    return Base64.base64decode(s)
-end
+# Note: base64decode is from Base64 module

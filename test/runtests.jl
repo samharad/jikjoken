@@ -2,22 +2,15 @@ using JikJoken
 using Test
 
 @testset "JikJoken.jl" begin
-    @testset "Basic roundtrip" begin
-        # This mirrors Python's test_simple() from tiktoken
-        enc = get_encoding("gpt2")
-
-        # Simple roundtrip test
-        text = "hello world"
-        tokens = encode(enc, text)
-        decoded = decode(enc, tokens)
-
-        @test decoded == text
-        @test length(tokens) > 0
-    end
-
     @testset "Library version" begin
         version = JikJoken.jikjoken_version()
         @test version isa String
         @test startswith(version, "0.1.")
     end
+
+    # Run all test files
+    include("test_basic.jl")
+    include("test_registry.jl")
+    include("test_compare_tiktoken.jl")
+    include("test_known_values.jl")
 end
