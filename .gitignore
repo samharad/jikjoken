@@ -1,0 +1,14 @@
+# Julia
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+
+# Build artifacts
+deps/jikjoken-sys/target/
+*.so
+*.dylib
+*.dll
+
+# Benchmark data files (too large for git)
+benchmarks/test_data*.txt
+benchmarks/results_*.json
